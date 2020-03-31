@@ -17,6 +17,8 @@ Module.register('MMM-BackgroundSlideshow', {
   defaults: {
     // an array of strings, each is a path to a directory with images
     imagePaths: ['modules/MMM-BackgroundSlideshow/exampleImages'],
+    // an array of string,s each is a path to a blacklisted directory
+    excludedImagePaths: [],
     // the speed at which to switch between images, in milliseconds
     slideshowSpeed: 10 * 1000,
     // if true randomize image order, otherwise do alphabetical
@@ -25,12 +27,8 @@ Module.register('MMM-BackgroundSlideshow', {
     recursiveSubDirectories: false,
     // list of valid file extensions, seperated by commas
     validImageFileExtensions: 'bmp,jpg,gif,png',
-    // show a panel containing information about the image currently displayed.
-    showmageInfo: false,
     // transition speed from one image to the other, transitionImages must be true
     transitionSpeed: '1s',
-    // show a progress bar indicating how long till the next image is displayed.
-    showProgressBar: false,
     // the sizing of the background image
     // cover: Resize the background image to cover the entire container, even if it has to stretch the image or cut a little bit off one of the edges
     // contain: Resize the background image to make sure the image is fully visible
@@ -119,7 +117,7 @@ Module.register('MMM-BackgroundSlideshow', {
     if (notification === 'BACKGROUNDSLIDESHOW_FILELIST') {
       // check this is for this module based on the woeid
       if (payload.identifier === this.identifier) {
-        // console.info('Returning Images, payload:' + JSON.stringify(payload));
+        console.info('Returning Images, payload:' + JSON.stringify(payload));
         // set the image list
         this.imageList = payload.imageList;
         // if image list actually contains images
@@ -127,6 +125,11 @@ Module.register('MMM-BackgroundSlideshow', {
         if (this.imageList.length > 0) {
           this.updateImage(); //Added to show the image at least once, but not change it within this.resume()
           this.resume();
+        } else {
+        	// don't try immediately fetching another image, we may stall the program
+        	// by continuously trying and getting an empty result (e.g. single empty directory set as image path)
+        	// but still retry a few seconds later (if the random pick returned nothing, the next one likely won't) 
+        	setTimeout(this.resume(), 2000);
         }
       }
     }
@@ -137,8 +140,19 @@ Module.register('MMM-BackgroundSlideshow', {
     this.div1 = this.createDiv('big1');
     this.div2 = this.createDiv('big2');
 
+
+   	this.titleDiv = document.createElement('div');
+    this.titleDiv.className = "imageTitleClass";
+    this.titleDiv.innerHTML = "Image Title Test!";
+    wrapper.appendChild(this.titleDiv);
+
+
     wrapper.appendChild(this.div1);
     wrapper.appendChild(this.div2);
+
+
+
+
 
     if (
       this.config.gradientDirection === 'vertical' ||
@@ -152,14 +166,6 @@ Module.register('MMM-BackgroundSlideshow', {
       this.config.gradientDirection === 'both'
     ) {
       this.createGradientDiv('right', this.config.gradient, wrapper);
-    }
-
-    if (this.config.showmageInfo) {
-      this.imageInfoDiv = this.createImageInfoDiv(wrapper);
-    }
-
-    if (this.config.showProgressBar) {
-      this.createProgressbarDiv(wrapper, this.config.slideshowSpeed);
     }
 
     return wrapper;
@@ -184,24 +190,6 @@ Module.register('MMM-BackgroundSlideshow', {
     return div;
   },
 
-  createImageInfoDiv: function(wrapper) {
-    const div = document.createElement('div');
-    div.className = 'info';
-    wrapper.appendChild(div);
-    return div;
-  },
-
-  createProgressbarDiv: function(wrapper, slideshowSpeed) {
-    const div = document.createElement('div');
-    div.className = 'progress';
-    const inner = document.createElement('div');
-    inner.className = 'progress-inner';
-    inner.style.display = 'none';
-    inner.style.animation = `move ${slideshowSpeed}ms linear`;
-    div.appendChild(inner);
-    wrapper.appendChild(div);
-  },
-
   updateImage: function() {
     if (this.imageList && this.imageList.length) {
       if (this.imageIndex < this.imageList.length) {
@@ -210,71 +198,51 @@ Module.register('MMM-BackgroundSlideshow', {
         }
         var div1 = this.div1;
         var div2 = this.div2;
-        const imageInfoDiv = this.config.showmageInfo ? this.imageInfoDiv : null;
-        const config = this.config;
+        var title = this.titleDiv;
+        title.innerHTML = this.imageList[this.imageIndex].imageName;
+
 
         var image = new Image();
         image.onload = function() {
-          div1.style.backgroundImage = `url("${this.src}")`;
-          div1.style.opacity = '1';
-          div1.style.transform="rotate(0deg)";
+			div1.style.backgroundImage = "url('" + this.src + "')";
+			div1.style.opacity = '1';
+			div1.style.transform="rotate(0deg)";
+			EXIF.getData(image, function() {
+				var Orientation = EXIF.getTag(this, "Orientation");
+				if (Orientation != null) {
+					// console.info('Updating image, orientation:' + Orientation);
+					if (Orientation == 3) {
+						// console.info('Updating rotation to 0deg');
+						div1.style.transform="rotate(180deg)";
+					}
+					else 
+						if (Orientation == 6) {
+						// console.info('Updating rotation to 90deg');
+						div1.style.transform="rotate(90deg)";
+						}
+					else
+						if (Orientation == 8) {
+						// console.info('Updating rotation to -90deg');
+						div1.style.transform="rotate(-90deg)";
+						}
+					}
+				}
+			)
 
-          if (imageInfoDiv) {
-            // Heuristic: display last path component as image name.
-            // If recursiveSubDirectories is set, display parent directory as well.
-            const pathComponents = decodeURI(this.src).split('/');
-            let imageName = pathComponents.pop();
-            // 3 = ['http', '', 'domain']
-            if (config.recursiveSubDirectories && pathComponents.length > 3) {
-              const dirName = pathComponents.pop();
-              imageName = `${dirName}/${imageName}`;
-            }
-            imageInfoDiv.innerHTML = imageName;
-          }
-
-          if (config.showProgressBar) {
-            // Restart css animation
-            const oldDiv = document.getElementsByClassName('progress-inner')[0];
-            const newDiv = oldDiv.cloneNode(true);
-            oldDiv.parentNode.replaceChild(newDiv, oldDiv);
-            newDiv.style.display = '';
-          }
-
-          EXIF.getData(image, function() {
-            var Orientation = EXIF.getTag(this, "Orientation");
-            if (Orientation == null) {
-              return;
-            }
-
-            var imageTransformCss = "rotate(0deg)";
-            if(Orientation == 2) {
-              imageTransformCss = "scaleX(-1)";
-            } else if (Orientation == 3) {
-              imageTransformCss = "scaleX(-1) scaleY(-1)";
-            } else if (Orientation == 4) {
-              imageTransformCss = "scaleY(-1)";
-            } else if (Orientation == 5) {
-              imageTransformCss = "scaleX(-1) rotate(90deg)";
-            } else if (Orientation == 6) {
-              imageTransformCss = "rotate(90deg)";
-            } else if (Orientation == 7) {
-              imageTransformCss = "scaleX(-1) rotate(-90deg)";
-            } else if (Orientation == 8) {
-              imageTransformCss = "rotate(-90deg)";
-            }
-            // console.info("Updating image EXIF orientation= " + Orientation + " css=" + imageTransformCss);
-            div1.style.transform = imageTransformCss;
-          });
           div2.style.opacity = '0';
         };
-        image.src = encodeURI(this.imageList[this.imageIndex]);
+        console.info('Updating image, path:' + this.imageList[this.imageIndex].imagePath);
+        image.src = encodeURI(this.imageList[this.imageIndex].imagePath);
         this.sendNotification('BACKGROUNDSLIDESHOW_IMAGE_UPDATED', {url:image.src});
-		    // console.info('Updating image, source:' + image.src);
+		console.info('Updating image, source:' + image.src);
         this.imageIndex += 1;
       } else {
         this.imageIndex = 0;
         this.updateImageList();
       }
+    }
+    else {
+        this.updateImageList();
     }
   },
 

@@ -1,6 +1,11 @@
 
 # Module: Background Slideshow
 
+Customization of the excellent MMM-BackgroundSlideshow module for MagicMirror2:
+- optimized random pick of an image in an arbitrarily complex directory tree (original code was browsing the whole  tree of the specified path, and built a single list will all files...)
+- added title showing the directory name from which the current image was picked.
+- added support for 180deg rotated images (from EXIF data)
+
 Show a slideshow of images in the background. Great for a photo frame from instead of a mirror.
 
 The `MMM-BackgroundSlideshow` module is designed to display images fullscreen, one at a time on a fixed interval, from one or many directories. These images can be shown in order or at random, one directory at a time or all at time. The images can transition from one to the other and be shown with no edge (cover) or the enter image(contain).

@@ -38,8 +38,8 @@ module.exports = NodeHelper.create({
   },
   // sort by filename attribute
   sortByFilename: function(a, b) {
-    aL = a.toLowerCase();
-    bL = b.toLowerCase();
+    aL = a.imagePath.toLowerCase();
+    bL = b.imagePath.toLowerCase();
     if (aL > bL) return 1;
     else return -1;
   },
@@ -64,25 +64,55 @@ module.exports = NodeHelper.create({
       ? this.shuffleArray(imageList)
       : imageList.sort(this.sortByFilename);
 
+ 	for (var i = 0; i < imageList.length; i++) {
+	    console.log("gatherImageList: " + imageList[i].imagePath) 
+    }
+
     return imageList;
   },
-
   getFiles(path, imageList, config) {
     var contents = FileSystemImageSlideshow.readdirSync(path);
-    for (let i = 0; i < contents.length; i++) {
-      var currentItem = path + '/' + contents[i];
-      var stats = FileSystemImageSlideshow.lstatSync(currentItem);
-      if (stats.isDirectory() && config.recursiveSubDirectories) {
-        this.getFiles(currentItem, imageList, config);
-      } else if (stats.isFile()) {
-        var isValidImageFileExtension = this.checkValidImageFileExtension(
-          currentItem,
-          config.validImageFileExtensions
-        );
-        if (isValidImageFileExtension) imageList.push(currentItem);
-      }
-    }
-  },
+
+	//pick a random element
+	let randomIndex = Math.floor(Math.random() * contents.length)
+	var itemName = contents[randomIndex];
+	var currentItemPath = path + '/' + itemName;
+
+
+	var pathElements = path.split("/");
+	var itemTopDir = pathElements[pathElements.length-1];
+
+	try {
+		if (!config.excludedImagePaths.includes(currentItemPath)) {
+
+			var stats = FileSystemImageSlideshow.lstatSync(currentItemPath);
+		    
+		    // if it's a folder, recursively look for a random image in that
+		    if (stats.isDirectory() && config.recursiveSubDirectories) {
+		      this.getFiles(currentItemPath, imageList, config);
+		    } 
+			// if it's an image, boom, we're done
+		    else if (stats.isFile()) {
+		      var isValidImageFileExtension = this.checkValidImageFileExtension(
+		        currentItemPath,
+		        config.validImageFileExtensions
+		      );
+
+
+				var imageStruct = {
+				  imagePath: [currentItemPath],
+				  imageName: [itemTopDir],
+				};
+
+
+		      if (isValidImageFileExtension) imageList.push(imageStruct);
+		    }
+		}
+	}
+	catch(error) {
+		console.log("Caught exception: " + error)
+	}
+  },  
   // subclass socketNotificationReceived, received notification from module
   socketNotificationReceived: function(notification, payload) {
     if (notification === 'BACKGROUNDSLIDESHOW_REGISTER_CONFIG') {
