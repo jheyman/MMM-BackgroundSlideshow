@@ -80,7 +80,7 @@ module.exports = NodeHelper.create({
 
 
 	var pathElements = path.split("/");
-	var itemTopDir = pathElements[pathElements.length-1];
+	var itemTopDir = pathElements[pathElements.length-1].replace(/_/g, ' ');
 
 	try {
 		if (!config.excludedImagePaths.includes(currentItemPath)) {
