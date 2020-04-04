@@ -1,8 +1,7 @@
 /* global Module */
 
 /* node_helper.js
- *
- * Magic Mirror
+* Custom version by jheyman based on :
  * Module: MMM-BackgroundSlideshow
  *
  * Magic Mirror By Michael Teeuw http://michaelteeuw.nl
