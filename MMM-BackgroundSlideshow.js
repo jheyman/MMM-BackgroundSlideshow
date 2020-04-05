@@ -15,14 +15,12 @@ Module.register('MMM-BackgroundSlideshow', {
   // Default module config.
   defaults: {
     // an array of strings, each is a path to a directory with images
-    imagePaths: ['modules/MMM-BackgroundSlideshow/exampleImages'],
+    imagesTopDirectory: 'modules/MMM-BackgroundSlideshow/exampleImages',
     // an array of string,s each is a path to a blacklisted directory
     excludedImagePaths: [],
     // the speed at which to switch between images, in milliseconds
     slideshowSpeed: 10 * 1000,
-    // if true randomize image order, otherwise do alphabetical
-    randomizeImageOrder: false,
-    // if false each path with be viewed seperately in the order listed
+     // if false each path with be viewed seperately in the order listed
     recursiveSubDirectories: false,
     // list of valid file extensions, seperated by commas
     validImageFileExtensions: 'bmp,jpg,gif,png',
@@ -52,6 +50,7 @@ Module.register('MMM-BackgroundSlideshow', {
     // the direction the gradient goes, vertical or horizontal
     gradientDirection: 'vertical'
   },
+
   // load function
   start: function() {
     // add identifier to the config
@@ -60,27 +59,27 @@ Module.register('MMM-BackgroundSlideshow', {
     this.config.validImageFileExtensions = this.config.validImageFileExtensions.toLowerCase();
     // set no error
     this.errorMessage = null;
-    if (this.config.imagePaths.length == 0) {
+    if (this.config.imagesTopDirectory == undefined) {
       this.errorMessage =
         'MMM-BackgroundSlideshow: Missing required parameter.';
     } else {
-      // create an empty image list
-      this.imageList = [];
+      // create an empty image
+      this.imageStruct = {};
       // set beginning image index to 0, as it will auto increment on start
       this.imageIndex = 0;
-      this.updateImageList();
+      this.grabNewImageInfo();
     }
   },
 
-    getScripts: function() {
+  getScripts: function() {
 		return ["modules/" + this.name + "/node_modules/exif-js/exif.js"];
-	},
-
-
+  },
+  
   getStyles: function() {
     // the css contains the make grayscale code
     return ['BackgroundSlideshow.css'];
   },
+
   // generic notification handler
   notificationReceived: function(notification, payload, sender) {
     if (sender) {
@@ -96,7 +95,6 @@ Module.register('MMM-BackgroundSlideshow', {
         if(this.timer){   // Restart timer only if timer was already running
           this.resume();
         }
-
       }
       else if (notification === 'BACKGROUNDSLIDESHOW_PLAY'){ // Change to next image and start timer.
         this.updateImage();
@@ -110,22 +108,24 @@ Module.register('MMM-BackgroundSlideshow', {
       }
     }
   },
-  // the socket handler
+
+  // manage notifications from our node_helper
   socketNotificationReceived: function(notification, payload) {
     // if an update was received
-    if (notification === 'BACKGROUNDSLIDESHOW_FILELIST') {
+    if (notification === 'BACKGROUNDSLIDESHOW_NEW_IMAGE_INFO') {
       // check this is for this module based on the woeid
       if (payload.identifier === this.identifier) {
         console.info('Returning Images, payload:' + JSON.stringify(payload));
         // set the image list
-        this.imageList = payload.imageList;
-        // if image list actually contains images
-        // set loaded flag to true and update dom
-        if (this.imageList.length > 0) {
-          this.updateImage(); //Added to show the image at least once, but not change it within this.resume()
+        this.imageStruct = payload.imageStruct;
+        // if image info actually contains an image path
+        // trig an update on the displayed page
+        if (this.imageStruct.imagePath != '') {
+          this.updateImage();
           this.resume();
         } else {
-        	// don't try immediately fetching another image, we may stall the program
+          // the random search returned an empty path, 
+          // don't try immediately fetching another image, we may stall the program  
         	// by continuously trying and getting an empty result (e.g. single empty directory set as image path)
         	// but still retry a few seconds later (if the random pick returned nothing, the next one likely won't) 
         	setTimeout(this.resume(), 2000);
@@ -133,25 +133,22 @@ Module.register('MMM-BackgroundSlideshow', {
       }
     }
   },
+
   // Override dom generator.
   getDom: function() {
     var wrapper = document.createElement('div');
     this.div1 = this.createDiv('big1');
     this.div2 = this.createDiv('big2');
 
-
+    // insert title line
    	this.titleDiv = document.createElement('div');
     this.titleDiv.className = "imageTitleClass";
     this.titleDiv.innerHTML = "Image Title Test!";
     wrapper.appendChild(this.titleDiv);
 
-
+    // insert the two overlapping images (the current one and the hidden one for fade effect)
     wrapper.appendChild(this.div1);
     wrapper.appendChild(this.div2);
-
-
-
-
 
     if (
       this.config.gradientDirection === 'vertical' ||
@@ -190,21 +187,25 @@ Module.register('MMM-BackgroundSlideshow', {
   },
 
   updateImage: function() {
-    console.log("UPDATE IMAGE called");
-    if (this.imageList && this.imageList.length) {
+    //console.log("MMM-BackgroundSlideShow UPDATE IMAGE");
+    if (this.imageStruct && this.imageStruct.imagePath != '') {
         if (this.config.transitionImages) {
           this.swapDivs();
         }
         var div1 = this.div1;
         var div2 = this.div2;
         var title = this.titleDiv;
-        title.innerHTML = this.imageList[0].imageDir;
+        
+        // update titel
+        title.innerHTML = this.imageStruct.imageDir;
 
+        // update image source/content
         var image = new Image();
         image.onload = function() {
   			div1.style.backgroundImage = "url('" + this.src + "')";
   			div1.style.opacity = '1';
-  			
+        
+        // manage image orientation from EXIT data in the file
         div1.style.transform="rotate(0deg)";
   			EXIF.getData(image, function() {
   				var Orientation = EXIF.getTag(this, "Orientation");
@@ -230,13 +231,9 @@ Module.register('MMM-BackgroundSlideshow', {
 
           div2.style.opacity = '0';
         };
-        console.info('Updating image, path:' + this.imageList[0].imagePath);
-        image.src = encodeURI(this.imageList[0].imagePath);
+        image.src = encodeURI(this.imageStruct.imagePath);
         this.sendNotification('BACKGROUNDSLIDESHOW_IMAGE_UPDATED', {url:image.src});
 		    console.info('Updating image, source:' + image.src);
-    }
-    else {
-        //this.updateImageList();
     }
   },
 
@@ -252,23 +249,22 @@ Module.register('MMM-BackgroundSlideshow', {
       this.timer = null;
     }
   },
+
   resume: function() {
-    //this.updateImage(); //Removed to prevent image change whenever MMM-Carousel changes slides
     this.suspend();
     var self = this;
     this.timer = setInterval(function() {
 		 console.log('MMM-BackgroundSlideshow updating after setInterval timeout');
-      //self.updateImage();
-      self.updateImageList();
+      self.grabNewImageInfo();
     }, self.config.slideshowSpeed);
   },
-  updateImageList: function() {
-    console.log("UPDATEIMAGELIST called");
+
+  grabNewImageInfo: function() {
+    console.log("grabNewImageInfo called");
     this.suspend();
-     // console.info('Getting Images');
-    // ask helper function to get the image list
+    // ask helper function to get a fresh image
     this.sendSocketNotification(
-      'BACKGROUNDSLIDESHOW_REGISTER_CONFIG',
+      'BACKGROUNDSLIDESHOW_GRAB_RANDOM_IMAGE',
       this.config
     );
   }

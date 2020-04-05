@@ -21,27 +21,6 @@ module.exports = NodeHelper.create({
   start: function() {
     //this.moduleConfigs = [];
   },
-  // shuffles an array at random and returns it
-  shuffleArray: function(array) {
-    var currentIndex = array.length,
-      temporaryValue,
-      randomIndex;
-    while (0 !== currentIndex) {
-      randomIndex = Math.floor(Math.random() * currentIndex);
-      currentIndex -= 1;
-      temporaryValue = array[currentIndex];
-      array[currentIndex] = array[randomIndex];
-      array[randomIndex] = temporaryValue;
-    }
-    return array;
-  },
-  // sort by filename attribute
-  sortByFilename: function(a, b) {
-    aL = a.imagePath.toLowerCase();
-    bL = b.imagePath.toLowerCase();
-    if (aL > bL) return 1;
-    else return -1;
-  },
   // checks there's a valid image file extension
   checkValidImageFileExtension: function(filename, extensions) {
     var extList = extensions.split(',');
@@ -54,95 +33,77 @@ module.exports = NodeHelper.create({
   gatherImageList: function(config) {
     var self = this;
     // create an empty main image list
-    var imageList = [];
-    for (var i = 0; i < config.imagePaths.length; i++) {
-      this.getFiles(config.imagePaths[i], imageList, config);
-    }
+    var imageStruct = {
+      imagePath: "",
+      imageDir: "",
+    };
+    this.getFiles(config.imagesTopDirectory, imageStruct, config);
 
-    imageList = config.randomizeImageOrder
-      ? this.shuffleArray(imageList)
-      : imageList.sort(this.sortByFilename);
-
- 	for (var i = 0; i < imageList.length; i++) {
-	    console.log("gatherImageList["+ i +"]: " + imageList[i].imagePath) 
-    }
-
-    return imageList;
+    console.log("gatherImageList returned " + imageStruct.imagePath) 
+    return imageStruct;
   },
-  getFiles(path, imageList, config) {
+  getFiles(path, imageStruct, config) {
     var contents = FileSystemImageSlideshow.readdirSync(path);
 
-	//pick a random element
-	let randomIndex = Math.floor(Math.random() * contents.length)
-	var itemName = contents[randomIndex];
-	var currentItemPath = path + '/' + itemName;
+  	//pick a random element
+  	let randomIndex = Math.floor(Math.random() * contents.length)
+  	var itemName = contents[randomIndex];
+  	var currentItemPath = path + '/' + itemName;
 
+  	var pathElements = path.split("/");
+    // keep only the parent directory of the image, that's what we want to display
+  	var itemTopDir = pathElements[pathElements.length-1].replace(/_/g, ' ');
 
-	var pathElements = path.split("/");
-	var itemTopDir = pathElements[pathElements.length-1].replace(/_/g, ' ');
+    // Beautify the parent directory name, by breaking into separate words & dates with space in between
+    if (itemTopDir.match(/[A-Z][a-z]+|[0-9]+/g) != null) {
+      //console.log("Before beautifying:" + itemTopDir);
+      itemTopDir = itemTopDir.match(/[A-Z][a-z]+|[0-9]+/g).join(" ");
+      //console.log("After beautifying:" + itemTopDir.match(/[A-Z][a-z]+|[0-9]+/g).join(" "));
+    }
 
-  if (itemTopDir.match(/[A-Z][a-z]+|[0-9]+/g) != null) {
-    itemTopDir = itemTopDir.match(/[A-Z][a-z]+|[0-9]+/g).join(" ");
-    console.log("JOINED:" + itemTopDir.match(/[A-Z][a-z]+|[0-9]+/g).join(" "));
-  } else{
-    console.log("NOT JOINED:" + itemTopDir);
-  }
+  	try {
+  		if (!config.excludedImagePaths.includes(currentItemPath)) {
+  			 var stats = FileSystemImageSlideshow.lstatSync(currentItemPath);
+  		    
+  		    // if it's a folder, recursively look for a random image in that
+  		    if (stats.isDirectory() && config.recursiveSubDirectories) {
+  		      this.getFiles(currentItemPath, imageStruct, config);
+  		    } 
+  			  // if it's an image, boom, we're done
+  		    else if (stats.isFile()) {
+  		      var isValidImageFileExtension = this.checkValidImageFileExtension(
+  		        currentItemPath,
+  		        config.validImageFileExtensions
+  		      );
 
-  //console.log("itemTopDir.match.typeof:" + itemTopDir.match(/[A-Z][a-z]+|[0-9]+/g).toString().join(" "));
-
-  // break at each uppercase letter and Number
-  //itemTopDir = itemTopDir.match(/[A-Z][a-z]+|[0-9]+/g).join(" ");
-
-	try {
-		if (!config.excludedImagePaths.includes(currentItemPath)) {
-
-			var stats = FileSystemImageSlideshow.lstatSync(currentItemPath);
-		    
-		    // if it's a folder, recursively look for a random image in that
-		    if (stats.isDirectory() && config.recursiveSubDirectories) {
-		      this.getFiles(currentItemPath, imageList, config);
-		    } 
-			// if it's an image, boom, we're done
-		    else if (stats.isFile()) {
-		      var isValidImageFileExtension = this.checkValidImageFileExtension(
-		        currentItemPath,
-		        config.validImageFileExtensions
-		      );
-
-
-				var imageStruct = {
-				  imagePath: [currentItemPath],
-				  imageDir: [itemTopDir],
-				};
-
-
-		      if (isValidImageFileExtension) imageList.push(imageStruct);
-		    }
-		}
-	}
-	catch(error) {
-		console.log("Caught exception: " + error)
-	}
+  		      if (isValidImageFileExtension) {
+                imageStruct.imagePath = currentItemPath; 
+                imageStruct.imageDir = itemTopDir;
+                console.log("getFiles returns " + imageStruct.imagePath + ", " + imageStruct.imageDir);
+            }
+  		    }
+  		}
+  	}
+  	catch(error) {
+  		console.log("Caught exception: " + error)
+  	}
   },  
   // subclass socketNotificationReceived, received notification from module
   socketNotificationReceived: function(notification, payload) {
-    console.log("socketNotificationReceived with not=" + notification);
-    if (notification === 'BACKGROUNDSLIDESHOW_REGISTER_CONFIG') {
-
-      console.log("SLIDESHOW node helper CALLED");
-
+    console.log("MMM-BackgroundSlideShow node_helper: socketNotificationReceived = " + notification);
+    if (notification === 'BACKGROUNDSLIDESHOW_GRAB_RANDOM_IMAGE') {
       // this to self
       var self = this;
       // get the image list
-      var imageList = this.gatherImageList(payload);
+      var imageStruct = this.gatherImageList(payload);
       // build the return payload
       var returnPayload = {
         identifier: payload.identifier,
-        imageList: imageList
+        imageStruct: imageStruct
       };
       // send the image list back
       self.sendSocketNotification(
-        'BACKGROUNDSLIDESHOW_FILELIST',
+        'BACKGROUNDSLIDESHOW_NEW_IMAGE_INFO',
         returnPayload
       );
     }
