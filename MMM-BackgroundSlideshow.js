@@ -89,18 +89,18 @@ Module.register('MMM-BackgroundSlideshow', {
         //console.log("MMM-BackgroundSlideshow: Changing Background");
         this.suspend();
         this.updateImage();
-        this.resume();
+        //this.resume();
       }
       else if (notification === 'BACKGROUNDSLIDESHOW_NEXT'){ // Change to next image
         this.suspend();
         this.grabNewImageInfo();
-        if(this.timer){   // Restart timer only if timer was already running
-          this.resume();
-        }
+        //if(this.timer){   // Restart timer only if timer was already running
+        //  this.resume();
+        //}
       }
       else if (notification === 'BACKGROUNDSLIDESHOW_PLAY'){ // Change to next image and start timer.
         this.grabNewImageInfo();
-        this.resume();
+        //this.resume();
       }
       else if (notification === 'BACKGROUNDSLIDESHOW_PAUSE'){ // Stop timer.
         this.suspend();
@@ -126,11 +126,20 @@ Module.register('MMM-BackgroundSlideshow', {
           this.updateImage();
           this.resume();
         } else {
-          // the random search returned an empty path, 
-          // don't try immediately fetching another image, we may stall the program  
-        	// by continuously trying and getting an empty result (e.g. single empty directory set as image path)
-        	// but still retry a few seconds later (if the random pick returned nothing, the next one likely won't) 
-        	setTimeout(this.resume(), 2000);
+          // the random search did not return an image, there are multiple reasons why
+          // this can happen (top directory is empty, the random search picked a directory that is 
+          // filtered out in the config, etc...). Don't try immediately fetching another image, we may stall 
+          // the program  by continuously trying and getting an empty result.
+          // but still retry a few seconds later (if the random pick returned nothing, maybe the next one won't) 
+          
+          //console.log("No image returned, retrying in 2 seconds...");
+
+          var self = this;
+          this.timer = setTimeout(function() {
+            //console.info('MMM-BackgroundSlideshow waking from TIMEOUT after empty image...');
+            self.grabNewImageInfo();
+          }, 2000);
+
         }
       }
     }
