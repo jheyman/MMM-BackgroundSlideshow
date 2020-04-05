@@ -1,8 +1,7 @@
 /* global Module */
 
 /* MMM-BackgroundSlideshow.js
- *
- * Magic Mirror
+ * Custom version by jheyman based on :
  * Module: MMM-BackgroundSlideshow
  *
  * Magic Mirror By Michael Teeuw http://michaelteeuw.nl
@@ -85,9 +84,9 @@ Module.register('MMM-BackgroundSlideshow', {
   // generic notification handler
   notificationReceived: function(notification, payload, sender) {
     if (sender) {
-      Log.log(this.name + " received a module notification: " + notification + " from sender: " + sender.name);
+      console.log(this.name + " received a module notification: " + notification + " from sender: " + sender.name);
       if(notification === 'BACKGROUNDSLIDESHOW_IMAGE_UPDATE'){
-        Log.log("MMM-BackgroundSlideshow: Changing Background");
+        console.log("MMM-BackgroundSlideshow: Changing Background");
         this.suspend();
         this.updateImage();
         this.resume();
@@ -191,58 +190,53 @@ Module.register('MMM-BackgroundSlideshow', {
   },
 
   updateImage: function() {
+    console.log("UPDATE IMAGE called");
     if (this.imageList && this.imageList.length) {
-      if (this.imageIndex < this.imageList.length) {
         if (this.config.transitionImages) {
           this.swapDivs();
         }
         var div1 = this.div1;
         var div2 = this.div2;
         var title = this.titleDiv;
-        title.innerHTML = this.imageList[this.imageIndex].imageName;
-
+        title.innerHTML = this.imageList[0].imageDir;
 
         var image = new Image();
         image.onload = function() {
-			div1.style.backgroundImage = "url('" + this.src + "')";
-			div1.style.opacity = '1';
-			div1.style.transform="rotate(0deg)";
-			EXIF.getData(image, function() {
-				var Orientation = EXIF.getTag(this, "Orientation");
-				if (Orientation != null) {
-					// console.info('Updating image, orientation:' + Orientation);
-					if (Orientation == 3) {
-						// console.info('Updating rotation to 0deg');
-						div1.style.transform="rotate(180deg)";
-					}
-					else 
-						if (Orientation == 6) {
-						// console.info('Updating rotation to 90deg');
-						div1.style.transform="rotate(90deg)";
-						}
-					else
-						if (Orientation == 8) {
-						// console.info('Updating rotation to -90deg');
-						div1.style.transform="rotate(-90deg)";
-						}
-					}
-				}
-			)
+  			div1.style.backgroundImage = "url('" + this.src + "')";
+  			div1.style.opacity = '1';
+  			
+        div1.style.transform="rotate(0deg)";
+  			EXIF.getData(image, function() {
+  				var Orientation = EXIF.getTag(this, "Orientation");
+  				if (Orientation != null) {
+  					// console.info('Updating image, orientation:' + Orientation);
+  					if (Orientation == 3) {
+  						// console.info('Updating rotation to 0deg');
+  						div1.style.transform="rotate(180deg)";
+  					}
+  					else 
+  						if (Orientation == 6) {
+  						// console.info('Updating rotation to 90deg');
+  						div1.style.transform="rotate(90deg)";
+  						}
+  					else
+  						if (Orientation == 8) {
+  						// console.info('Updating rotation to -90deg');
+  						div1.style.transform="rotate(-90deg)";
+  						}
+  					}
+  				}
+  			)
 
           div2.style.opacity = '0';
         };
-        console.info('Updating image, path:' + this.imageList[this.imageIndex].imagePath);
-        image.src = encodeURI(this.imageList[this.imageIndex].imagePath);
+        console.info('Updating image, path:' + this.imageList[0].imagePath);
+        image.src = encodeURI(this.imageList[0].imagePath);
         this.sendNotification('BACKGROUNDSLIDESHOW_IMAGE_UPDATED', {url:image.src});
-		console.info('Updating image, source:' + image.src);
-        this.imageIndex += 1;
-      } else {
-        this.imageIndex = 0;
-        this.updateImageList();
-      }
+		    console.info('Updating image, source:' + image.src);
     }
     else {
-        this.updateImageList();
+        //this.updateImageList();
     }
   },
 
@@ -263,11 +257,13 @@ Module.register('MMM-BackgroundSlideshow', {
     this.suspend();
     var self = this;
     this.timer = setInterval(function() {
-		// console.info('MMM-BackgroundSlideshow updating from resume');
-      self.updateImage();
+		 console.log('MMM-BackgroundSlideshow updating after setInterval timeout');
+      //self.updateImage();
+      self.updateImageList();
     }, self.config.slideshowSpeed);
   },
   updateImageList: function() {
+    console.log("UPDATEIMAGELIST called");
     this.suspend();
      // console.info('Getting Images');
     // ask helper function to get the image list

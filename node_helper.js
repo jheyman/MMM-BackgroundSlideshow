@@ -64,7 +64,7 @@ module.exports = NodeHelper.create({
       : imageList.sort(this.sortByFilename);
 
  	for (var i = 0; i < imageList.length; i++) {
-	    console.log("gatherImageList: " + imageList[i].imagePath) 
+	    console.log("gatherImageList["+ i +"]: " + imageList[i].imagePath) 
     }
 
     return imageList;
@@ -80,6 +80,18 @@ module.exports = NodeHelper.create({
 
 	var pathElements = path.split("/");
 	var itemTopDir = pathElements[pathElements.length-1].replace(/_/g, ' ');
+
+  if (itemTopDir.match(/[A-Z][a-z]+|[0-9]+/g) != null) {
+    itemTopDir = itemTopDir.match(/[A-Z][a-z]+|[0-9]+/g).join(" ");
+    console.log("JOINED:" + itemTopDir.match(/[A-Z][a-z]+|[0-9]+/g).join(" "));
+  } else{
+    console.log("NOT JOINED:" + itemTopDir);
+  }
+
+  //console.log("itemTopDir.match.typeof:" + itemTopDir.match(/[A-Z][a-z]+|[0-9]+/g).toString().join(" "));
+
+  // break at each uppercase letter and Number
+  //itemTopDir = itemTopDir.match(/[A-Z][a-z]+|[0-9]+/g).join(" ");
 
 	try {
 		if (!config.excludedImagePaths.includes(currentItemPath)) {
@@ -100,7 +112,7 @@ module.exports = NodeHelper.create({
 
 				var imageStruct = {
 				  imagePath: [currentItemPath],
-				  imageName: [itemTopDir],
+				  imageDir: [itemTopDir],
 				};
 
 
@@ -114,7 +126,11 @@ module.exports = NodeHelper.create({
   },  
   // subclass socketNotificationReceived, received notification from module
   socketNotificationReceived: function(notification, payload) {
+    console.log("socketNotificationReceived with not=" + notification);
     if (notification === 'BACKGROUNDSLIDESHOW_REGISTER_CONFIG') {
+
+      console.log("SLIDESHOW node helper CALLED");
+
       // this to self
       var self = this;
       // get the image list
