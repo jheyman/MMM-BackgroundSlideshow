@@ -39,7 +39,7 @@ module.exports = NodeHelper.create({
     };
     this.getFiles(config.imagesTopDirectory, imageStruct, config);
 
-    console.log("gatherImageList returned " + imageStruct.imagePath) 
+    //console.log("gatherImageList returned " + imageStruct.imagePath) 
     return imageStruct;
   },
   getFiles(path, imageStruct, config) {
@@ -62,7 +62,7 @@ module.exports = NodeHelper.create({
     }
 
   	try {
-  		if (!config.excludedImagePaths.includes(currentItemPath)) {
+  		if (!config.excludedImagePaths.includes(currentItemPath) && !currentItemPath.includes(config.filteredDirectoriesKeyword)) {
   			 var stats = FileSystemImageSlideshow.lstatSync(currentItemPath);
   		    
   		    // if it's a folder, recursively look for a random image in that
@@ -79,13 +79,13 @@ module.exports = NodeHelper.create({
   		      if (isValidImageFileExtension) {
                 imageStruct.imagePath = currentItemPath; 
                 imageStruct.imageDir = itemTopDir;
-                console.log("getFiles returns " + imageStruct.imagePath + ", " + imageStruct.imageDir);
+                //console.log("getFiles returns " + imageStruct.imagePath + ", " + imageStruct.imageDir);
             }
   		    }
   		}
   	}
   	catch(error) {
-  		console.log("Caught exception: " + error)
+  		console.error("Caught exception: " + error)
   	}
   },  
   // subclass socketNotificationReceived, received notification from module

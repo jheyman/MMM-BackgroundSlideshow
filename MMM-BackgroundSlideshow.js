@@ -18,6 +18,8 @@ Module.register('MMM-BackgroundSlideshow', {
     imagesTopDirectory: 'modules/MMM-BackgroundSlideshow/exampleImages',
     // an array of string,s each is a path to a blacklisted directory
     excludedImagePaths: [],
+    // a keyword to filter out directories
+    filteredDirectoriesKeyword: "NO_SHOW_",
     // the speed at which to switch between images, in milliseconds
     slideshowSpeed: 10 * 1000,
      // if false each path with be viewed seperately in the order listed
@@ -65,8 +67,7 @@ Module.register('MMM-BackgroundSlideshow', {
     } else {
       // create an empty image
       this.imageStruct = {};
-      // set beginning image index to 0, as it will auto increment on start
-      this.imageIndex = 0;
+      // initialize by getting a first image
       this.grabNewImageInfo();
     }
   },
@@ -85,19 +86,20 @@ Module.register('MMM-BackgroundSlideshow', {
     if (sender) {
       console.log(this.name + " received a module notification: " + notification + " from sender: " + sender.name);
       if(notification === 'BACKGROUNDSLIDESHOW_IMAGE_UPDATE'){
-        console.log("MMM-BackgroundSlideshow: Changing Background");
+        //console.log("MMM-BackgroundSlideshow: Changing Background");
         this.suspend();
         this.updateImage();
         this.resume();
       }
       else if (notification === 'BACKGROUNDSLIDESHOW_NEXT'){ // Change to next image
-        this.updateImage();
+        this.suspend();
+        this.grabNewImageInfo();
         if(this.timer){   // Restart timer only if timer was already running
           this.resume();
         }
       }
       else if (notification === 'BACKGROUNDSLIDESHOW_PLAY'){ // Change to next image and start timer.
-        this.updateImage();
+        this.grabNewImageInfo();
         this.resume();
       }
       else if (notification === 'BACKGROUNDSLIDESHOW_PAUSE'){ // Stop timer.
@@ -254,13 +256,13 @@ Module.register('MMM-BackgroundSlideshow', {
     this.suspend();
     var self = this;
     this.timer = setInterval(function() {
-		 console.log('MMM-BackgroundSlideshow updating after setInterval timeout');
+		 //console.log('MMM-BackgroundSlideshow updating after setInterval timeout');
       self.grabNewImageInfo();
     }, self.config.slideshowSpeed);
   },
 
   grabNewImageInfo: function() {
-    console.log("grabNewImageInfo called");
+    //console.log("grabNewImageInfo called");
     this.suspend();
     // ask helper function to get a fresh image
     this.sendSocketNotification(

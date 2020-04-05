@@ -83,25 +83,31 @@ The following properties can be configured:
 	<thead>
 	<tbody>
 		<tr>
-			<td><code>imagePaths</code></td>
-			<td>Array value containing strings. Each string should be a path to a directory where image files can be found.<br>
+			<td><code>imagesTopDirectory</code></td>
+			<td>Path to a directory that will be searched (randomly) for images.<br>
 				<br><b>Example:</b> <code>['modules/MMM-BackgroundSlideshow/exampleImages']</code>
 				<br>This value is <b>REQUIRED</b>
 			</td>
 		</tr>
 		<tr>
-			<td><code>slideshowSpeed</code></td>
-			<td>Integer value, the length of time to show one image before switching to the next, in milliseconds.<br>
-				<br><b>Example:</b> <code>6000</code> for 6 seconds
-				<br><b>Default value:</b> <code>10000</code> or 10 seconds
+			<td><code>excludedImagePaths</code></td>
+			<td>An array of strings containing directory paths that should be ignore (within the top directory)<br>
+				<br><b>Example:</b> <code>['modules/MMM-BackgroundSlideshow/exampleImages/DontShowThisDir']</code>
 				<br>This value is <b>OPTIONAL</b>
 			</td>
 		</tr>
 		<tr>
-			<td><code>randomizeImageOrder</code></td>
-			<td>Boolean value, if true will randomize the order of the images, if false will use an alphabetical sorting by filename.<br>
-				<br><b>Example:</b> <code>true</code>
-				<br><b>Default value:</b> <code>false</code>
+			<td><code>filteredDirectoriesKeyword</code></td>
+			<td>While searching for images, the module will filter out directories which name contains this keyword<br>
+				<br><b>Example:</b> <code>'DontShowThisDir_'</code>
+				<br>This value is <b>OPTIONAL</b>
+			</td>
+		</tr>			
+		<tr>
+			<td><code>slideshowSpeed</code></td>
+			<td>Integer value, the length of time to show one image before switching to the next, in milliseconds.<br>
+				<br><b>Example:</b> <code>6000</code> for 6 seconds
+				<br><b>Default value:</b> <code>10000</code> or 10 seconds
 				<br>This value is <b>OPTIONAL</b>
 			</td>
 		</tr>
@@ -121,30 +127,11 @@ The following properties can be configured:
 				<br>This value is <b>OPTIONAL</b>
 			</td>
 		</tr>
-		<tr>
-			<td><code>showmageInfo</code></td>
-			<td>Boolean value, if true a bubble containing the currently displayed image file
-			name will be shown. The parent directory is also displayed if the
-			recursiveSubDirectories option is set to true.<br>
-				<br><b>Example:</b> <code>true</code>
-				<br><b>Default value:</b> <code>false</code>
-				<br>This value is <b>OPTIONAL</b>
-			</td>
-		</tr>
     <tr>
 			<td><code>transitionSpeed</code></td>
 			<td>Transition speed from one image to the other, transitionImages must be true. Must be a valid css transition duration.<br>
 				<br><b>Example:</b> <code>'2s'</code>
 				<br><b>Default value:</b> <code>'1s'</code>
-				<br>This value is <b>OPTIONAL</b>
-			</td>
-		</tr>
-		<tr>
-			<td><code>showProgressBar</code></td>
-			<td>Boolean value, if true a progress bar indicating how long till the next image is
-			displayed is shown.<br>
-				<br><b>Example:</b> <code>true</code>
-				<br><b>Default value:</b> <code>false</code>
 				<br>This value is <b>OPTIONAL</b>
 			</td>
 		</tr>
