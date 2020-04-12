@@ -220,23 +220,7 @@ Module.register('MMM-BackgroundSlideshow', {
         div1.style.transform="rotate(0deg)";
   			EXIF.getData(image, function() {
   				var Orientation = EXIF.getTag(this, "Orientation");
-  				if (Orientation != null) {
-  					// console.info('Updating image, orientation:' + Orientation);
-  					if (Orientation == 3) {
-  						// console.info('Updating rotation to 0deg');
-  						div1.style.transform="rotate(180deg)";
-  					}
-  					else 
-  						if (Orientation == 6) {
-  						// console.info('Updating rotation to 90deg');
-  						div1.style.transform="rotate(90deg)";
-  						}
-  					else
-  						if (Orientation == 8) {
-  						// console.info('Updating rotation to -90deg');
-  						div1.style.transform="rotate(-90deg)";
-  						}
-  					}
+          this.div1.style.transform = this.getImageTransformCss(exifOrientation);
   				}
   			)
 
@@ -247,7 +231,27 @@ Module.register('MMM-BackgroundSlideshow', {
 		    console.info('Updating image, source:' + image.src);
     }
   },
-
+  getImageTransformCss: function(exifOrientation) {
+    switch(exifOrientation) {
+      case 2:
+        return "scaleX(-1)";
+      case 3:
+        return "scaleX(-1) scaleY(-1)";
+      case 4:
+        return "scaleY(-1)";
+      case 5:
+        return "scaleX(-1) rotate(90deg)";
+      case 6:
+        return "rotate(90deg)";
+      case 7:
+        return "scaleX(-1) rotate(-90deg)";
+      case 8:
+        return "rotate(-90deg)";
+      case 1:  // Falls through.
+      default:
+        return "rotate(0deg)";
+    }
+  },
   swapDivs: function() {
     var temp = this.div1;
     this.div1 = this.div2;

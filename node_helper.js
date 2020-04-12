@@ -39,7 +39,7 @@ module.exports = NodeHelper.create({
     };
     this.getFiles(config.imagesTopDirectory, imageStruct, config);
 
-    //console.log("gatherImageList returned " + imageStruct.imagePath + " from " + imageStruct.imageDir);
+    console.log("gatherImageList returned " + imageStruct.imagePath + " from " + imageStruct.imageDir);
     return imageStruct;
   },
   getFiles(path, imageStruct, config) {
@@ -55,10 +55,10 @@ module.exports = NodeHelper.create({
   	var itemTopDir = pathElements[pathElements.length-1].replace(/_/g, ' ');
 
     // Beautify the parent directory name, by breaking into separate words & dates with space in between
-    if (itemTopDir.match(/[a-z]+|[A-Z][a-z]+|[0-9]+/g) != null) {
-      console.log("Before beautifying:" + itemTopDir);
-      itemTopDir = itemTopDir.match(/[a-z]+|[A-Z][a-z]+|[0-9]+/g).join(" ");
-      console.log("After beautifying:" + itemTopDir.match(/[a-z]+|[A-Z][a-z]+|[0-9]+/g).join(" "));
+    if (itemTopDir.match(/[a-zà-ú]+|[A-Z][a-zà-ú]+|[A-Z]+|[0-9]+/g) != null) {
+      //console.log("Before beautifying:" + itemTopDir);
+      itemTopDir = itemTopDir.match(/[a-zà-ú]+|[A-Z][a-zà-ú]+|[A-Z]+|[0-9]+/g).join(" ");
+      //console.log("After beautifying:" + itemTopDir.match(/[a-zà-ú]+|[A-Z][a-zà-ú]+|[A-Z]+|[0-9]+/g).join(" "));
     }
 
   	try {
@@ -87,7 +87,7 @@ module.exports = NodeHelper.create({
   	catch(error) {
   		console.error("Caught exception: " + error)
     }
-    console.log("getFiles returns " + imageStruct.imagePath + " from " + imageStruct.imageDir);
+    //console.log("getFiles returns " + imageStruct.imagePath + " from " + imageStruct.imageDir);
   },  
   // subclass socketNotificationReceived, received notification from module
   socketNotificationReceived: function(notification, payload) {
