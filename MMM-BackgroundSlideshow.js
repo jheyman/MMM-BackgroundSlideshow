@@ -19,7 +19,7 @@ Module.register('MMM-BackgroundSlideshow', {
     // an array of string,s each is a path to a blacklisted directory
     excludedImagePaths: [],
     // a keyword to filter out directories
-    filteredDirectoriesKeyword: "NO_SHOW_",
+    filteredDirectoriesKeyword: "NOSHOW_",
     // the speed at which to switch between images, in milliseconds
     slideshowSpeed: 10 * 1000,
      // if false each path with be viewed seperately in the order listed
@@ -84,25 +84,21 @@ Module.register('MMM-BackgroundSlideshow', {
   // generic notification handler
   notificationReceived: function(notification, payload, sender) {
     if (sender) {
-      console.log(this.name + " received a module notification: " + notification + " from sender: " + sender.name);
+      //console.log(this.name + " received a module notification: " + notification + " from sender: " + sender.name);
       if(notification === 'BACKGROUNDSLIDESHOW_IMAGE_UPDATE'){
-        //console.log("MMM-BackgroundSlideshow: Changing Background");
         this.suspend();
         this.updateImage();
-        //this.resume();
       }
-      else if (notification === 'BACKGROUNDSLIDESHOW_NEXT'){ // Change to next image
+      else if (notification === 'BACKGROUNDSLIDESHOW_NEXT'){
         this.suspend();
         this.grabNewImageInfo();
-        //if(this.timer){   // Restart timer only if timer was already running
-        //  this.resume();
-        //}
       }
-      else if (notification === 'BACKGROUNDSLIDESHOW_PLAY'){ // Change to next image and start timer.
+      else if (notification === 'BACKGROUNDSLIDESHOW_PLAY'){
+        this.titleDiv.innerHTML = this.titleDiv.innerHTML.replace(" (PAUSED)", "");
         this.grabNewImageInfo();
-        //this.resume();
       }
-      else if (notification === 'BACKGROUNDSLIDESHOW_PAUSE'){ // Stop timer.
+      else if (notification === 'BACKGROUNDSLIDESHOW_PAUSE'){
+        this.titleDiv.innerHTML = this.titleDiv.innerHTML + " (PAUSED)";
         this.suspend();
       }
       else {
@@ -152,10 +148,15 @@ Module.register('MMM-BackgroundSlideshow', {
     this.div2 = this.createDiv('big2');
 
     // insert title line
+    this.imageTitleWrapper = document.createElement('div');
+    this.imageTitleWrapper.className = "imageTitleWrapper";
+
    	this.titleDiv = document.createElement('div');
     this.titleDiv.className = "imageTitleClass";
     this.titleDiv.innerHTML = "Image Title Test!";
-    wrapper.appendChild(this.titleDiv);
+    
+    this.imageTitleWrapper.appendChild(this.titleDiv);
+    wrapper.appendChild(this.imageTitleWrapper);
 
     // insert the two overlapping images (the current one and the hidden one for fade effect)
     wrapper.appendChild(this.div1);
@@ -206,6 +207,7 @@ Module.register('MMM-BackgroundSlideshow', {
         var div1 = this.div1;
         var div2 = this.div2;
         var title = this.titleDiv;
+        var self = this;
         
         // update titel
         title.innerHTML = this.imageStruct.imageDir;
@@ -219,10 +221,10 @@ Module.register('MMM-BackgroundSlideshow', {
         // manage image orientation from EXIT data in the file
         div1.style.transform="rotate(0deg)";
   			EXIF.getData(image, function() {
-  				var Orientation = EXIF.getTag(this, "Orientation");
-          this.div1.style.transform = this.getImageTransformCss(exifOrientation);
+          var Orientation = EXIF.getTag(image, "Orientation");
+          div1.style.transform = self.getImageTransformCss(Orientation);
   				}
-  			)
+  			);
 
           div2.style.opacity = '0';
         };
