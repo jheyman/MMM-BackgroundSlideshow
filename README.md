@@ -1,41 +1,26 @@
+# Module: Background Slideshow (jheyman custom version)
 
-# Module: Background Slideshow
+Customization of the excellent [module](https://github.com/darickc/MMM-BackgroundSlideshow) for MagicMirror2 to display background images/slideshow:
+- optimized random pick of ONE image at a time from an arbitrarily complex directory tree (original code was browsing the whole tree of the specified path, and built a single list will all file paths, which did not scale well to huge directories)
+- added title showing the directory name from which the current image was picked.
 
-Show a slideshow of images in the background. Great for a photo frame from instead of a mirror.
+## Installing the module
 
-The `MMM-BackgroundSlideshow` module is designed to display images fullscreen, one at a time on a fixed interval, from one or many directories. These images can be shown in order or at random, one directory at a time or all at time. The images can transition from one to the other and be shown with no edge (cover) or the enter image(contain).
+In MagicMirror's `modules` directory,
 
-Based on <a href="https://github.com/AdamMoses-GitHub/MMM-ImageSlideshow/blob/master/MMM-ImageSlideshow.js">MMM-ImageSlideshow</a>.
-
-<img src="https://github.com/darickc/MMM-BackgroundSlideshow/blob/master/screenshots/landscape.jpg" style="width: 300px;" />
-<img src="https://github.com/darickc/MMM-BackgroundSlideshow/blob/master/screenshots/portait.jpg" style="width: 300px;" />
-
-## Dependencies / Requirements
-
-This module requires no special dependencies. The only requirement is that the image directories you path to are fixed paths accessible to the Magic Mirror instance.
-
-## Operation
-
-This module will take in a list of directory paths, one or more, containing image files. The module will display those images in either alphabetical or random order, across either each path one at time or across all the paths at once. Once all the images have been shown, it will loop back and start again.
-
-Extra configurations include setting the amount of time an image is shown for, selecting which file extensions are valid, the transition speed from one image to another, the background sizing, whether or not to animate the transition from one to the other, the gradient used to make the text more readable, and the gradient opacity.
-
-## Using the module
-
-Use Git to download. Make sure Git is installed on your system. In the command line/terminal, go to the modules directory of the your Magic Mirror install. run: 'git clone https://github.com/darickc/MMM-BackgroundSlideshow.git'. The advantage of using Git is when there is an update, you can run 'git pull' and it will pull down all the updates. Magic Mirror can even let you know when there are updates.
-
-Or
-
-Download the zip file https://github.com/darickc/MMM-BackgroundSlideshow/archive/master.zip. Unzip contents into the modules directory of your Magic Mirror install. Rename the 'MMM-BackgroundSlideshow-master' folder to 'MMM-BackgroundSlideshow'.
-
-Once downloaded, install dependencies:
 ````
-cd ~/MagicMirror/modules/MMM-BackgroundSlideshow
+git clone https://github.com/jheyman/MMM-BackgroundSlideshow.git'
+````
+
+````
+cd MMM-BackgroundSlideshow
 ````
 
 ````
 npm install
 ````
+
+## Configuring the module
 
 Add the module to the modules array in the `config/config.js` file:
 
@@ -45,23 +30,10 @@ modules: [
     module: 'MMM-BackgroundSlideshow',
     position: 'fullscreen_below',
     config: {
-      imagePaths: ['modules/MMM-BackgroundSlideshow/exampleImages/'],
-      transitionImages: true,
-      randomizeImageOrder: true
+    	// see config options below
     }
   }
 ];
-```
-
-I also recommend adding the following to the custom.css to make the text a little brighter:
-
-```
-.normal,
-.dimmed,
-header,
-body {
-    color: #fff;
-}
 ```
 
 ## Notification options
@@ -109,25 +81,31 @@ The following properties can be configured:
 	<thead>
 	<tbody>
 		<tr>
-			<td><code>imagePaths</code></td>
-			<td>Array value containing strings. Each string should be a path to a directory where image files can be found.<br>
-				<br><b>Example:</b> <code>['modules/MMM-BackgroundSlideshow/exampleImages/']</code>
+			<td><code>imagesTopDirectory</code></td>
+			<td>Path to a directory that will be searched (randomly) for images.<br>
+				<br><b>Example:</b> <code>['modules/MMM-BackgroundSlideshow/exampleImages']</code>
 				<br>This value is <b>REQUIRED</b>
 			</td>
 		</tr>
+		<tr>
+			<td><code>excludedImagePaths</code></td>
+			<td>An array of strings containing directory paths that should be ignore (within the top directory)<br>
+				<br><b>Example:</b> <code>['modules/MMM-BackgroundSlideshow/exampleImages/DontShowThisDir']</code>
+				<br>This value is <b>OPTIONAL</b>
+			</td>
+		</tr>
+		<tr>
+			<td><code>filteredDirectoriesKeyword</code></td>
+			<td>While searching for images, the module will filter out directories which name contains this keyword<br>
+				<br><b>Example:</b> <code>'DontShowThisDir_'</code>
+				<br>This value is <b>OPTIONAL</b>
+			</td>
+		</tr>			
 		<tr>
 			<td><code>slideshowSpeed</code></td>
 			<td>Integer value, the length of time to show one image before switching to the next, in milliseconds.<br>
 				<br><b>Example:</b> <code>6000</code> for 6 seconds
 				<br><b>Default value:</b> <code>10000</code> or 10 seconds
-				<br>This value is <b>OPTIONAL</b>
-			</td>
-		</tr>
-		<tr>
-			<td><code>randomizeImageOrder</code></td>
-			<td>Boolean value, if true will randomize the order of the images, if false will use an alphabetical sorting by filename.<br>
-				<br><b>Example:</b> <code>true</code>
-				<br><b>Default value:</b> <code>false</code>
 				<br>This value is <b>OPTIONAL</b>
 			</td>
 		</tr>
