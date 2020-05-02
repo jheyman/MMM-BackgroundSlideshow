@@ -14,6 +14,9 @@
 // call in the required classes
 var NodeHelper = require('node_helper');
 var FileSystemImageSlideshow = require('fs');
+const Jimp = require('jimp');
+var nodemailer = require('nodemailer');
+const EMAIL_PIC_PATHNAME = "modules/MMM-BackgroundSlideshow/email_temp.jpg";
 
 // the main module helper create
 module.exports = NodeHelper.create({
@@ -28,6 +31,15 @@ module.exports = NodeHelper.create({
       if (filename.toLowerCase().endsWith(extList[extIndex])) return true;
     }
     return false;
+  },
+  resizeImage: function(inputFile, outputFile) {
+      console.log("resizeImage :" + inputFile);
+      Jimp.read(inputFile, function (err, test) {
+        if (err) throw err;
+        test.resize(1024, Jimp.AUTO)
+            .quality(95)                 
+            .write(EMAIL_PIC_PATHNAME); 
+    });
   },
   // gathers the image list
   gatherImageList: function(config) {
@@ -92,9 +104,24 @@ module.exports = NodeHelper.create({
   // subclass socketNotificationReceived, received notification from module
   socketNotificationReceived: function(notification, payload) {
     console.log("MMM-BackgroundSlideShow node_helper: socketNotificationReceived = " + notification);
-    if (notification === 'BACKGROUNDSLIDESHOW_GRAB_RANDOM_IMAGE') {
-      // this to self
-      var self = this;
+    // this to self
+    var self = this;  
+    
+    if (notification === 'INIT_MAILER'){
+      this.config = payload;
+      console.log('BackgroundSlideShow initializing nodemailer, email account used:' + self.config.emailConfig.auth.user);
+      this.transporter = nodemailer.createTransport({
+          service: self.config.emailConfig.service,
+          auth: {
+              user: self.config.emailConfig.auth.user,
+              pass: self.config.emailConfig.auth.pass
+          },
+          logger: true, // log to console
+          debug: false // don't include SMTP data in the logs
+      });
+    }
+    else if (notification === 'BACKGROUNDSLIDESHOW_GRAB_RANDOM_IMAGE') {
+
       // get the image list
       var imageStruct = this.gatherImageList(payload);
       // build the return payload
@@ -107,6 +134,34 @@ module.exports = NodeHelper.create({
         'BACKGROUNDSLIDESHOW_NEW_IMAGE_INFO',
         returnPayload
       );
+    }
+    else if (notification === 'BACKGROUNDSLIDESHOW_EMAIL_IMAGE') {
+      self.resizeImage(payload.imagePath);
+               
+      var message = {
+          from: 'Julien',
+          to: self.config.emailConfig.recipients,
+          subject: "[Photo] "+ payload.imageDir,
+          text: self.config.emailConfig.emailText,
+          attachments: [
+              {
+                  path: EMAIL_PIC_PATHNAME
+              }
+          ]
+      }
+
+      // send the resized pic as attachment in an email, with a 10s delay 
+      // (to make sure the resized pic has been written to disk) 
+      setTimeout(function(){
+        self.transporter.sendMail(message, function (error, info) {
+            console.log('MMM-BackgroundSlideShowMessage sending email now !');
+            if (error) {
+                console.log('Error occurred');
+                console.log(error.message);
+                return;
+            }
+            console.log('MMM-BackgroundSlideShowServer responded with "%s"', info.response);
+      })}, 10000);
     }
   }
 });

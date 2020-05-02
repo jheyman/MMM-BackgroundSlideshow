@@ -67,6 +67,10 @@ Module.register('MMM-BackgroundSlideshow', {
     } else {
       // create an empty image
       this.imageStruct = {};
+      this.previousImageStruct = {};
+      // intialize email sender
+      this.emailEnabled = true;
+      this.sendSocketNotification('INIT_MAILER', this.config);
       // initialize by getting a first image
       this.grabNewImageInfo();
     }
@@ -101,6 +105,29 @@ Module.register('MMM-BackgroundSlideshow', {
         this.titleDiv.innerHTML = this.titleDiv.innerHTML + " (PAUSED)";
         this.suspend();
       }
+      else if (notification === 'BACKGROUNDSLIDESHOW_PREVIOUS'){
+        this.suspend();
+        this.imageStruct = this.previousImageStruct;
+        this.updateImage();
+        this.resume();
+      }      
+      else if (notification === 'BACKGROUNDSLIDESHOW_SENDASEMAIL'){
+        if (this.emailEnabled) {
+          this.suspend();
+          this.sendCurrentImageAsEmail();
+          this.sendNotification('SHOW_ALERT', {type: "notification", message: "Email sent!"});
+          this.resume();
+          // Disabled the email feature for the predefined time as a protection
+          this.emailEnabled = false;
+          var self = this;
+          this.emailLock = setTimeout(function(){
+              console.log("Reactivating email send feature");
+              self.emailEnabled = true;
+          }, self.config.emailConfig.emailDisableTime);
+        } else {
+          this.sendNotification('SHOW_ALERT', {type: "notification", message: "Email still disabled"});
+        }
+      }      
       else {
         Log.log(this.name + " received a system notification: " + notification);
       }
@@ -114,7 +141,8 @@ Module.register('MMM-BackgroundSlideshow', {
       // check this is for this module based on the woeid
       if (payload.identifier === this.identifier) {
         console.info('Returning Images, payload:' + JSON.stringify(payload));
-        // set the image list
+        // Keep track of the latest image and update with the new one.
+        this.previousImageStruct = this.imageStruct;
         this.imageStruct = payload.imageStruct;
         // if image info actually contains an image path
         // trig an update on the displayed page
@@ -284,5 +312,15 @@ Module.register('MMM-BackgroundSlideshow', {
       'BACKGROUNDSLIDESHOW_GRAB_RANDOM_IMAGE',
       this.config
     );
+  },
+
+  sendCurrentImageAsEmail: function() {
+    console.log('sendCurrentImageAsEmail');
+    this.sendSocketNotification(
+      'BACKGROUNDSLIDESHOW_EMAIL_IMAGE',
+      {imagePath: this.imageStruct.imagePath, imageDir: this.imageStruct.imageDir}
+    );  
   }
+
+
 });
